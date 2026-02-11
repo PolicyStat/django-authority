@@ -58,6 +58,10 @@ html version using the setup.py::
 Changelog:
 ==========
 
+0.17:
+------------------
+* support of timezone aware dates
+
 0.16:
 ------------------
 * Setup compatibility for Django 3.2 - Django 4.2.

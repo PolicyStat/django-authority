@@ -4,8 +4,9 @@ from django.contrib.auth.models import Group, Permission as DjangoPermission
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import MultipleObjectsReturned
 from django.db.models import Q
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 
 import authority
 from authority import permissions
@@ -436,6 +437,60 @@ class GroupPermissionCacheTestCase(SmartCachingTestCase):
             "foo", self.group, approved=True,
         )
         self.assertTrue(can_foo_with_group)
+
+
+class TimezoneAwarenessTestCase(TestCase):
+    """
+    Tests that Permission date fields use timezone-aware datetimes
+    when USE_TZ=True and naive datetimes when USE_TZ=False.
+    """
+
+    fixtures = FIXTURES
+
+    def setUp(self):
+        self.user = User.objects.get(QUERY)
+
+    @override_settings(USE_TZ=True)
+    def test_date_requested_is_aware_when_use_tz_true(self):
+        perm = Permission.objects.create(
+            user=self.user,
+            content_object=self.user,
+            codename="user_permission.browse_user",
+        )
+        self.assertTrue(timezone.is_aware(perm.date_requested))
+
+    @override_settings(USE_TZ=False)
+    def test_date_requested_is_naive_when_use_tz_false(self):
+        perm = Permission.objects.create(
+            user=self.user,
+            content_object=self.user,
+            codename="user_permission.browse_user",
+        )
+        self.assertTrue(timezone.is_naive(perm.date_requested))
+
+    @override_settings(USE_TZ=True)
+    def test_date_approved_is_aware_when_use_tz_true(self):
+        perm = Permission(
+            user=self.user,
+            content_object=self.user,
+            codename="user_permission.browse_user",
+            approved=True,
+        )
+        perm.save()
+        self.assertIsNotNone(perm.date_approved)
+        self.assertTrue(timezone.is_aware(perm.date_approved))
+
+    @override_settings(USE_TZ=False)
+    def test_date_approved_is_naive_when_use_tz_false(self):
+        perm = Permission(
+            user=self.user,
+            content_object=self.user,
+            codename="user_permission.browse_user",
+            approved=True,
+        )
+        perm.save()
+        self.assertIsNotNone(perm.date_approved)
+        self.assertTrue(timezone.is_naive(perm.date_approved))
 
 
 class AddPermissionTestCase(TestCase):

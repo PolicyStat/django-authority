@@ -1,9 +1,9 @@
-from datetime import datetime
 from django.conf import settings
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.auth.models import Group
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from authority.managers import PermissionManager
@@ -50,7 +50,7 @@ class Permission(models.Model):
         ),
     )
 
-    date_requested = models.DateTimeField(_("date requested"), default=datetime.now)
+    date_requested = models.DateTimeField(_("date requested"), default=timezone.now)
     date_approved = models.DateTimeField(_("date approved"), blank=True, null=True)
 
     objects = PermissionManager()
@@ -71,7 +71,7 @@ class Permission(models.Model):
     def save(self, *args, **kwargs):
         # Make sure the approval date is always set
         if self.approved and not self.date_approved:
-            self.date_approved = datetime.now()
+            self.date_approved = timezone.now()
         super(Permission, self).save(*args, **kwargs)
 
     def approve(self, creator):
